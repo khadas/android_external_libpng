@@ -2688,11 +2688,16 @@ PNG_EXPORT(216, png_uint_32, png_get_io_chunk_type,
 #endif /* PNG_READ_COMPOSITE_NODIV_SUPPORTED */
 
 #ifdef PNG_READ_INT_FUNCTIONS_SUPPORTED
+#ifdef TARGET_ARCH_ARM
+png_uint_32 png_get_uint_32(png_const_bytep buf);
+png_uint_16 png_get_uint_16(png_const_bytep buf);
+png_int_32  png_get_int_32(png_const_bytep buf);
+#else
 PNG_EXPORT(201, png_uint_32, png_get_uint_32, (png_const_bytep buf));
 PNG_EXPORT(202, png_uint_16, png_get_uint_16, (png_const_bytep buf));
 PNG_EXPORT(203, png_int_32, png_get_int_32, (png_const_bytep buf));
+#endif  /* TARGET_ARCH_ARM */
 #endif
-
 PNG_EXPORT(204, png_uint_32, png_get_uint_31, (png_const_structrp png_ptr,
     png_const_bytep buf));
 /* No png_get_int_16 -- may be added if there's a real need for it. */

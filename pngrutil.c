@@ -54,6 +54,7 @@ png_get_fixed_point(png_structrp png_ptr, png_const_bytep buf)
 #endif
 
 #ifdef PNG_READ_INT_FUNCTIONS_SUPPORTED
+#ifndef    TARGET_ARCH_ARM
 /* NOTE: the read macros will obscure these definitions, so that if
  * PNG_USE_READ_MACROS is set the library will not use them internally,
  * but the APIs will still be available externally.
@@ -107,7 +108,56 @@ png_get_uint_16)(png_const_bytep buf)
 
    return (png_uint_16)val;
 }
+#else
+// arm v6 above support unaligned load/store and rev instrucions
+inline png_uint_32 (PNGAPI
+png_get_uint_32)(png_const_bytep buf)
+{
+    png_uint_32 i, tmp;
 
+    tmp = *((png_uint_32 *)buf);
+    asm (
+        "rev    %[i], %[tmp]          \n"
+        : [i] "=r" (i)
+        : [tmp] "r" (tmp)
+        :"memory", "cc"
+    );
+
+   return (i);
+}
+
+inline png_int_32 (PNGAPI
+png_get_int_32)(png_const_bytep buf)
+{
+    png_uint_32 i, tmp;
+
+    tmp = *((png_uint_32 *)buf);
+    asm (
+        "rev    %[i], %[tmp]          \n"
+        : [i] "=r" (i)
+        : [tmp] "r" (tmp)
+        :"memory", "cc"
+    );
+
+   return (i);
+}
+
+inline png_uint_16 (PNGAPI
+png_get_uint_16)(png_const_bytep buf)
+{
+    png_uint_16 i, tmp;
+
+    tmp = *((png_uint_16 *)buf);
+    asm (
+        "rev16    %[i], %[tmp]          \n"
+        : [i] "=r" (i)
+        : [tmp] "r" (tmp)
+        :"memory", "cc"
+    );
+
+   return (i);
+}
+#endif  /* TARGET_ARCH_ARM */
 #endif /* PNG_READ_INT_FUNCTIONS_SUPPORTED */
 
 /* Read and check the PNG file signature */

@@ -2750,7 +2750,44 @@ png_do_read_filler(png_row_infop row_info, png_bytep row,
       {
          if (flags & PNG_FLAG_FILLER_AFTER)
          {
-            /* This changes the data from RGB to RGBX */
+        #ifdef TARGET_ARCH_ARM
+            png_bytep sp = row + (png_size_t)row_width * 3;
+            png_bytep dp = sp  + (png_size_t)row_width;
+            int tmp = row_width - 1;
+            asm volatile (
+                "cmp        %[tmp], #0                              \n"
+                "ble        3f                                      \n"
+                "vdup.8     d3, %[lo_filler]                        \n"
+                "cmp        %[tmp], #8                              \n"
+                "blt        1f                                      \n"
+            "2:                                                     \n"
+                "sub        %[sp], %[sp], #24                       \n"
+                "vld3.8     {d0, d1, d2}, [%[sp]]                   \n"
+                "sub        %[tmp], %[tmp], #8                      \n"
+                "cmp        %[tmp], #8                              \n"
+                "sub        %[dp], %[dp], #32                       \n"
+                "vst4.8     {d0, d1, d2, d3}, [%[dp]]               \n"
+                "bge        2b                                      \n"
+                "cmp        %[tmp], #0                              \n"
+                "ble        3f                                      \n"
+            "1:                                                     \n"
+                "sub        %[sp], %[sp], #3                        \n"
+                "vld3.8     {d0[0], d1[0], d2[0]}, [%[sp]]          \n"
+                "sub        %[dp], %[dp], #4                        \n"
+                "subs       %[tmp], %[tmp], #1                      \n"
+                "vst4.8     {d0[0], d1[0], d2[0], d3[0]}, [%[dp]]   \n"
+                "bgt        1b                                      \n"
+            "3:                                                     \n"
+                "strb       %[lo_filler], [%[dp], #-1]              \n"
+                :
+                : [tmp] "r" (tmp), [sp] "r" (sp), [dp] "r" (dp),
+                  [lo_filler] "r" (lo_filler)
+                : "memory", "cc"
+            );
+            row_info->channels = 4;
+            row_info->pixel_depth = 32;
+            row_info->rowbytes = row_width * 4;
+        #else
             png_bytep sp = row + (png_size_t)row_width * 3;
             png_bytep dp = sp  + (png_size_t)row_width;
             for (i = 1; i < row_width; i++)
@@ -2764,6 +2801,7 @@ png_do_read_filler(png_row_infop row_info, png_bytep row,
             row_info->channels = 4;
             row_info->pixel_depth = 32;
             row_info->rowbytes = row_width * 4;
+        #endif
          }
 
          else
