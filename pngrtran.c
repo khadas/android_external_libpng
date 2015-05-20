@@ -2750,7 +2750,10 @@ png_do_read_filler(png_row_infop row_info, png_bytep row,
       {
          if (flags & PNG_FLAG_FILLER_AFTER)
          {
-        #ifdef TARGET_ARCH_ARM
+        /*
+         * for 32bit ARM
+         */
+        #if defined(TARGET_ARCH_ARM) && !defined(__aarch64__)
             png_bytep sp = row + (png_size_t)row_width * 3;
             png_bytep dp = sp  + (png_size_t)row_width;
             int tmp = row_width - 1;
@@ -2787,6 +2790,9 @@ png_do_read_filler(png_row_infop row_info, png_bytep row,
             row_info->channels = 4;
             row_info->pixel_depth = 32;
             row_info->rowbytes = row_width * 4;
+            /*
+             * TODO: optimize this code for ARM64
+             */
         #else
             png_bytep sp = row + (png_size_t)row_width * 3;
             png_bytep dp = sp  + (png_size_t)row_width;
